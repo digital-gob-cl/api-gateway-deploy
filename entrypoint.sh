@@ -71,6 +71,14 @@ then
 
     ID=$(echo "$API_DATA" | jq -r '.id')
     echo "APi gateway con Id: $ID, se ha creado" 
+
+    echo "Creando Stage"
+
+    aws apigateway create-deployment \
+        --rest-api-id $ID \
+        --stage-name $INPUT_STAGE_NAME \
+        --variables "url=hostname,vpcLinkId=changeme" 
+
 fi
 
 if [[ "$OSTYPE" == "linux-gnu"* ]];
@@ -85,3 +93,5 @@ echo "Actualizando API $ID"
 
 aws apigateway put-rest-api --rest-api-id $ID \
         --body file://./swager_body.b64 
+
+

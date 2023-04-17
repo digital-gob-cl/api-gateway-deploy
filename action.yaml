@@ -11,6 +11,11 @@ inputs:
     description: Version del container
     required: true
 
+  stage_name:
+    description: Identificador de stage_name
+    required: false
+    default: v1
+
   eks_cluster_name:
     description: Cluster sobre el cual se relacionará api gateway
     required: true
