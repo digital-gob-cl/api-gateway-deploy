@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+ls -la
+
 if [ ! -z "$INPUT_ENVIRONMENT" ];
 then 
     ENVIRONMENT=$INPUT_ENVIRONMENT
@@ -11,21 +13,34 @@ PROJECT=$INPUT_PROJECT
 echo "Revisando balancers"
 NLB_LIST=$(aws elbv2 describe-load-balancers | jq -r ' [  .LoadBalancers[] | select( .Type=="network" ) |   { arn: .LoadBalancerArn, hostname: .DNSName } ] ')
 
-HOSTNAME=$(kubectl get services -l cpat.service=$SERVICE_NAME -n cpat -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
+EKS_SERVICE_HOSTNAME=$(./kubectl get services -l cpat.service=$SERVICE_NAME -n cpat -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
 
-echo "Buscando NLB: $HOSTNAME"
+echo "Buscando NLB: $EKS_SERVICE_HOSTNAME"
 
-ARN=$(echo $NLB_LIST | jq --arg h $HOSTNAME -r '.[] | select( .hostname == $h ) | .arn' )
+if [ -z "$EKS_SERVICE_HOSTNAME" ];
+then
+    echo "No se ha encotrado el servicio etiquetado como $EKS_SERVICE_HOSTNAME"
+    echo "Revisar que la etiqueta (label) 'cpat.service' tenga el nombre dek servucui $EKS_SERVICE_HOSTNAME"
+    exit 1
+fi
+#Al menos un NLB debe salir desde acá, sino lo hay, se supone que no se ha levantado
+ARN=$(echo $NLB_LIST | jq --arg h $EKS_SERVICE_HOSTNAME -r '.[] | select( .hostname == $h ) | .arn' )
 
+if [ -z "$ARN" ];
+then
+    echo "El servicio $SERVICE_NAME, no tiene asociado un NLB"
+    exit 1
+fi
 #Listar los links que estan desplegados
 NLBS=$(aws apigateway get-vpc-links | jq -r ' [ .items[].targetArns[] ] ')
 
+#Seleccionar el NLB asociado al servicio
 RES=$(echo $NLBS | jq --arg t $ARN 'select( . | index($t) )')
 echo "Resultado de la busqueda: $RES"
-
+echo "Verificar si existe VPC Link"
 if [ -z "$RES" ];
 then
-    echo "No existe el VPC Link"
+    echo "No existe el VPC Link, procediendo a crearlo"
     echo "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link"
 
     aws apigateway create-vpc-link \
@@ -53,7 +68,7 @@ then
                         --description "API Gateway servicio $SERVICE_NAME")
 
     ID=$(echo "$API_DATA" | jq -r '.id')
-
+    echo "APi gateway con Id: $ID, se ha creado" 
 fi
 
 if [[ "$OSTYPE" == "linux-gnu"* ]];

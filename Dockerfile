@@ -1,4 +1,4 @@
-FROM arkhotech/github-action-image:1.0
+FROM arkhotech/github-action-image:1.1
 
 COPY entrypoint.sh /entrypoint.sh
 
