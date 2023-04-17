@@ -3,6 +3,8 @@ set -e
 
 ls -la
 
+aws eks update-kubeconfig --region ${AWS_DEFAULT_REGION} --name ${INPUT_CLUSTER_NAME}
+
 if [ ! -z "$INPUT_ENVIRONMENT" ];
 then 
     ENVIRONMENT=$INPUT_ENVIRONMENT

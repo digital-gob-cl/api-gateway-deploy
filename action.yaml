@@ -11,6 +11,10 @@ inputs:
     description: Version del container
     required: true
 
+  eks_cluster_name:
+    description: Cluster sobre el cual se relacionará api gateway
+    required: true
+
   service_name:
     description: Nombre del servicio o imagen
     required: true
@@ -18,7 +22,7 @@ inputs:
   project: 
     description: Identificador del proyecto
     required: true
-  
+
   environment:
     description: Ambiente de despliegue de la api
     required: true
