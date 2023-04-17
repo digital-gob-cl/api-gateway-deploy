@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-ls -la
-
 aws eks update-kubeconfig --region ${AWS_DEFAULT_REGION} --name ${INPUT_EKS_CLUSTER_NAME}
 
 if [ ! -z "$INPUT_ENVIRONMENT" ];
@@ -12,7 +10,7 @@ fi
 
 PROJECT=$INPUT_PROJECT
 
-echo "Revisando balancers"
+echo "Revisando balancers asciado al servicio $SERVICE_NAME"
 NLB_LIST=$(aws elbv2 describe-load-balancers | jq -r ' [  .LoadBalancers[] | select( .Type=="network" ) |   { arn: .LoadBalancerArn, hostname: .DNSName } ] ')
 
 EKS_SERVICE_HOSTNAME=$(/kubectl get services -l cpat.service=$SERVICE_NAME -n cpat -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
@@ -22,7 +20,7 @@ echo "Buscando NLB: $EKS_SERVICE_HOSTNAME"
 if [ -z "$EKS_SERVICE_HOSTNAME" ];
 then
     echo "No se ha encotrado el servicio etiquetado como $EKS_SERVICE_HOSTNAME"
-    echo "Revisar que la etiqueta (label) 'cpat.service' tenga el nombre dek servucui $EKS_SERVICE_HOSTNAME"
+    echo "Revisar que la etiqueta (label) 'cpat.service' tenga el nombre dek servicio $EKS_SERVICE_HOSTNAME"
     exit 1
 fi
 #Al menos un NLB debe salir desde acá, sino lo hay, se supone que no se ha levantado
@@ -45,11 +43,17 @@ then
     echo "No existe el VPC Link, procediendo a crearlo"
     echo "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link"
 
-    aws apigateway create-vpc-link \
+    VPC_LINK_RES=$(aws apigateway create-vpc-link \
         --name "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link" \
         --description "Link para API servicio $SERVICE_NAME en ambiente $ENVIRONMENT" \
         --target-arns "$ARN" \
-        --tags "Environment=$ENVIRONMENT,Project=$PROJECT,Purpose=API"
+        --tags "Environment=$ENVIRONMENT,Project=$PROJECT,Purpose=API")
+
+    echo $VPC_LINK_RES
+
+    VPC_LINK_ID=$(echo $VPC_LINK_RES | jq -r '.id' )
+
+    
 else
     echo "Ya existe NLB para el servicio $SERVICE_NAME"
 fi
@@ -62,7 +66,7 @@ API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | s
 
 ID=$(echo "$API_DATA" | jq -r '.id')
 
-if [ -z ${API_DATA} ];
+if [ -z ${ID} ];
 then
     echo "Creando API Gateway"
     API_DATA=$(aws apigateway create-rest-api --name=$API_NAME \
@@ -73,11 +77,6 @@ then
     echo "APi gateway con Id: $ID, se ha creado" 
 
     echo "Creando Stage"
-
-    aws apigateway create-deployment \
-        --rest-api-id $ID \
-        --stage-name $INPUT_STAGE_NAME \
-        --variables "url=hostname,vpcLinkId=changeme" 
 
 fi
 
@@ -94,4 +93,20 @@ echo "Actualizando API $ID"
 aws apigateway put-rest-api --rest-api-id $ID \
         --body file://./swager_body.b64 
 
+
+EXISTS_DEPLOYMENT=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items | length ')
+
+if [ "${EXISTS_DEPLOYMENT}"=="0" ];
+then
+    aws apigateway create-deployment \
+        --rest-api-id $ID \
+        --stage-name $INPUT_STAGE_NAME \
+        --variables "url=$EKS_SERVICE_HOSTNAME,vpcLinkId=$VPC_LINK_ID" 
+else
+    echo "Actualizando"
+    $DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id 3hn50aahtd | jq -r '.items[0] |  .id')
+    aws apigateway update-deployment \
+        --rest-api-id $ID \
+        --deployment-id $DEPLOYMENT_ID
+fi
 
