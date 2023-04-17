@@ -1,0 +1,48 @@
+name: 'API Gateway Deployer Action'
+description: 'Custom Action para desplegar  api gateway contra servicios EKS que usan NLB y API Link'
+inputs:
+
+  swagger_path:
+    description: Ubicación del archivo Swagger
+    default: apidef/apidef-swagger.yaml
+    required: false
+
+  service_version:
+    description: Version del container
+    required: true
+
+  service_name:
+    description: Nombre del servicio o imagen
+    required: true
+
+  project: 
+    description: Identificador del proyecto
+    required: true
+  
+  environment:
+    description: Ambiente de despliegue de la api
+    required: true
+
+  region:
+    description: Region AWS
+    default: us-east-1
+    required: false
+
+  aws_access_key_id:
+    description: access key
+    required: false
+
+  aws_secret_access_key:
+    description: Secret access key
+    required: false
+
+
+  
+
+
+
+
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
