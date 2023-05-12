@@ -13,7 +13,7 @@ PROJECT=$INPUT_PROJECT
 echo "Revisando balancers asciado al servicio $SERVICE_NAME"
 NLB_LIST=$(aws elbv2 describe-load-balancers | jq -r ' [  .LoadBalancers[] | select( .Type=="network" ) |   { arn: .LoadBalancerArn, hostname: .DNSName } ] ')
 
-EKS_SERVICE_HOSTNAME=$(/kubectl get services -l cpat.service=$SERVICE_NAME -n cpat -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
+EKS_SERVICE_HOSTNAME=$(kubectl get services -l cpat.service=$SERVICE_NAME -n cpat -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
 
 echo "Buscando NLB: $EKS_SERVICE_HOSTNAME"
 
@@ -31,14 +31,15 @@ then
     echo "El servicio $SERVICE_NAME, no tiene asociado un NLB"
     exit 1
 fi
-#Listar los links que estan desplegados
-NLBS=$(aws apigateway get-vpc-links | jq -r ' [ .items[].targetArns[] ] ')
 
-#Seleccionar el NLB asociado al servicio
-RES=$(echo $NLBS | jq --arg t $ARN 'select( . | index($t) )')
-echo "Resultado de la busqueda: $RES"
+#Listar los links que estan desplegados
+VPC_LINK_ID=$(aws apigateway get-vpc-links | jq -r --arg t $ARN ' .items[] | select( .targetArns[] == $t ) | .id ')
+echo "Resultado de la busqueda: $VPC_LINK_ID"
 echo "Verificar si existe VPC Link"
-if [ -z "$RES" ];
+
+
+
+if [ -z "$VPC_LINK_ID" ];
 then
     echo "No existe el VPC Link, procediendo a crearlo"
     echo "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link"
@@ -56,7 +57,11 @@ then
     
 else
     echo "Ya existe NLB para el servicio $SERVICE_NAME"
+    echo "VPCLink ID: $VPC_LINK_ID"
+
 fi
+
+
 #Actualizando API
 
 API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME-api"
@@ -68,7 +73,8 @@ ID=$(echo "$API_DATA" | jq -r '.id')
 
 if [ -z ${ID} ];
 then
-    echo "Creando API Gateway"
+    echo "Creando API Gateway $API_NAME"
+    
     API_DATA=$(aws apigateway create-rest-api --name=$API_NAME \
                         --endpoint-configuration "types=REGIONAL" \
                         --description "API Gateway servicio $SERVICE_NAME")
@@ -96,8 +102,13 @@ aws apigateway put-rest-api --rest-api-id $ID \
 
 EXISTS_DEPLOYMENT=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items | length ')
 
+echo "Deployment sobre API $ID"
+echo "VPCLink: $VPC_LINK_ID"
+echo "NLB: $EKS_SERVICE_HOSTNAME"
+
 if [ "${EXISTS_DEPLOYMENT}"=="0" ];
 then
+    echo "Creando deployment sobre"
     aws apigateway create-deployment \
         --rest-api-id $ID \
         --stage-name $INPUT_STAGE_NAME \
