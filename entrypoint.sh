@@ -89,20 +89,20 @@ then
 fi
 
 #Reemplazo de valores para lambda authorizer
-cp $INPUT_SWAGGER_PATH swagger_temp.yaml
+cp ./$INPUT_SWAGGER_PATH ./swagger_temp.yaml
 
-sed -i 's/ACCOUNT_ID/"'$ACCOUNT_ID'"/g'  swagger_temp.yaml
+sed -i 's/ACCOUNT_ID/"'$ACCOUNT_ID'"/g'  ./swagger_temp.yaml
 
-sed -i 's/REGION/"'$AWS_DEFAULT_REGION'"/g'  swagger_temp.yaml
+sed -i 's/REGION/"'$AWS_DEFAULT_REGION'"/g'  ./swagger_temp.yaml
 
-INPUT_SWAGGER_PATH=swagger_temp.yaml
+
 
 if [[ "$OSTYPE" == "linux-gnu"* ]];
 then
     echo "$OSTYPE"
-    base64 ./${INPUT_SWAGGER_PATH} > ./swager_body.b64
+    base64 ./swagger_temp.yaml > ./swager_body.b64
 else
-    base64 -i ./${INPUT_SWAGGER_PATH} -o ./swager_body.b64
+    base64 -i ./swagger_temp.yaml -o ./swager_body.b64
 fi 
     
 echo "Actualizando API $ID"
