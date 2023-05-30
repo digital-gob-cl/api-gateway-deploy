@@ -95,7 +95,7 @@ sed -i 's/ACCOUNT_ID/"'$ACCOUNT_ID'"/g'  ./swagger_temp.yaml
 
 sed -i 's/REGION/"'$AWS_DEFAULT_REGION'"/g'  ./swagger_temp.yaml
 
-
+cat  ./swagger_temp.yaml
 
 if [[ "$OSTYPE" == "linux-gnu"* ]];
 then
