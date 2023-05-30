@@ -28,6 +28,14 @@ inputs:
     description: Identificador del proyecto
     required: true
 
+  authorizer_function:
+    description: Nombre de la funcion lambda authorizer
+    required: true
+
+  authorizer_role_name:
+    description: Nombre del rol para ejecución de authorizer
+    required: true
+
   environment:
     description: Ambiente de despliegue de la api
     required: true

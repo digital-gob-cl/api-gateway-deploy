@@ -123,7 +123,7 @@ then
     aws apigateway create-deployment \
         --rest-api-id $ID \
         --stage-name $INPUT_STAGE_NAME \
-        --variables "url=$EKS_SERVICE_HOSTNAME,vpcLinkId=$VPC_LINK_ID" 
+        --variables "url=$EKS_SERVICE_HOSTNAME,vpcLinkId=$VPC_LINK_ID,cpat_authorizer=$INPUT_AUTHORIZER_FUNCTION,cpat_authorizer_role=$INPUT_AUTHORIZER_ROLE_NAME" 
 else
     echo "Actualizando"
     $DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id 3hn50aahtd | jq -r '.items[0] |  .id')
