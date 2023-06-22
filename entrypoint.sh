@@ -68,6 +68,7 @@ fi
 #Actualizando API
 API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME-api"
 API_NAME="$SERVICE_NAME"
+API_NAME=cpat-dev-usuarios-api
 
 #Check si existe api gateway
 API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')
@@ -85,7 +86,7 @@ then
                         --description "API Gateway servicio $SERVICE_NAME")
 
     ID=$(echo "$API_DATA" | jq -r '.id')
-    echo "APi gateway con Id: $ID, se ha creado"
+    echo "API gateway con Id: $ID, se ha creado"
     echo "Creando Stage"
 fi
 
@@ -135,6 +136,5 @@ else
 #    aws apigateway update-deployment \
 #        --rest-api-id $ID \
 #        --deployment-id $DEPLOYMENT_ID
-#fi
-#
-#
+fi
+
