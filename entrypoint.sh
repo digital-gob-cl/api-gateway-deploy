@@ -71,7 +71,6 @@ API_NAME="$SERVICE_NAME"
 
 # Check si existe API gateway
 API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')
-echo "API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')"
 
 ID=$(echo "$API_DATA" | jq -r '.id')
 
