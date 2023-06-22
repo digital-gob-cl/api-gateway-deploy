@@ -120,6 +120,10 @@ echo "NLB: $EKS_SERVICE_HOSTNAME"
 if [ "${EXISTS_DEPLOYMENT}"=="0" ];
 then
     echo "Creando deployment sobre"
+    echo "INPUT_STAGE_NAME=$INPUT_STAGE_NAME"
+    echo "INPUT_AUTHORIZER_FUNCTION=$INPUT_AUTHORIZER_FUNCTION"
+    echo "INPUT_AUTHORIZER_ROLE_NAME=$INPUT_AUTHORIZER_ROLE_NAME"
+
     aws apigateway create-deployment \
         --rest-api-id $ID \
         --stage-name $INPUT_STAGE_NAME \
