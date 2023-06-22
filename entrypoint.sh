@@ -66,74 +66,71 @@ else
 fi
 
 #Actualizando API
-
 API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME-api"
-API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME"
+API_NAME="$SERVICE_NAME"
 
-#Check si existe api gateway 
+#Check si existe api gateway
 API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')
 echo "API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')"
 
 ID=$(echo "$API_DATA" | jq -r '.id')
 echo "ID=\$(echo \"$API_DATA\" | jq -r '.id')=$ID"
 
-#if [ -z ${ID} ];
-#then
-#    echo "Creando API Gateway $API_NAME"
-#    
-#    API_DATA=$(aws apigateway create-rest-api --name=$API_NAME \
-#                        --endpoint-configuration "types=REGIONAL" \
-#                        --description "API Gateway servicio $SERVICE_NAME")
-#
-#    ID=$(echo "$API_DATA" | jq -r '.id')
-#    echo "APi gateway con Id: $ID, se ha creado" 
-#
-#    echo "Creando Stage"
-#
-#fi
-#
-##Reemplazo de valores para lambda authorizer
-#cp ./$INPUT_SWAGGER_PATH ./swagger_temp.yaml
-#
-#sed -i 's/ACCOUNT_ID/'$ACCOUNT_ID'/g'  ./swagger_temp.yaml
-#
-#sed -i 's/REGION/'$AWS_DEFAULT_REGION'/g'  ./swagger_temp.yaml
-#
+if [ -z ${ID} ];
+then
+    echo "Creando API Gateway $API_NAME"
+    
+    API_DATA=$(aws apigateway create-rest-api --name=$API_NAME \
+                        --endpoint-configuration "types=REGIONAL" \
+                        --description "API Gateway servicio $SERVICE_NAME")
+
+    ID=$(echo "$API_DATA" | jq -r '.id')
+    echo "APi gateway con Id: $ID, se ha creado"
+    echo "Creando Stage"
+fi
+
+#Reemplazo de valores para lambda authorizer
+cp ./$INPUT_SWAGGER_PATH ./swagger_temp.yaml
+
+sed -i 's/ACCOUNT_ID/'$ACCOUNT_ID'/g'  ./swagger_temp.yaml
+
+sed -i 's/REGION/'$AWS_DEFAULT_REGION'/g'  ./swagger_temp.yaml
+
 #cat  ./swagger_temp.yaml
-#
-#if [[ "$OSTYPE" == "linux-gnu"* ]];
-#then
-#    echo "$OSTYPE"
-#    base64 ./swagger_temp.yaml > ./swager_body.b64
-#else
-#    base64 -i ./swagger_temp.yaml -o ./swager_body.b64
-#fi 
-#    
-#echo "Actualizando API $ID"
-#
-#aws apigateway put-rest-api --rest-api-id $ID \
-#        --body file://./swager_body.b64 
-#
-#
-#EXISTS_DEPLOYMENT=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items | length ')
-#
-#echo "Deployment sobre API $ID"
-#echo "VPCLink: $VPC_LINK_ID"
-#echo "NLB: $EKS_SERVICE_HOSTNAME"
-#
-#if [ "${EXISTS_DEPLOYMENT}"=="0" ];
-#then
-#    echo "Creando deployment sobre"
-#    echo "INPUT_STAGE_NAME=$INPUT_STAGE_NAME"
-#    echo "INPUT_AUTHORIZER_FUNCTION=$INPUT_AUTHORIZER_FUNCTION"
-#    echo "INPUT_AUTHORIZER_ROLE_NAME=$INPUT_AUTHORIZER_ROLE_NAME"
-#
+
+if [[ "$OSTYPE" == "linux-gnu"* ]];
+then
+    echo "$OSTYPE"
+    base64 ./swagger_temp.yaml > ./swager_body.b64
+else
+    base64 -i ./swagger_temp.yaml -o ./swager_body.b64
+fi 
+
+echo "Actualizando API $ID"
+
+aws apigateway put-rest-api --rest-api-id $ID \
+        --body file://./swager_body.b64 
+
+
+EXISTS_DEPLOYMENT=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items | length ')
+
+echo "Deployment sobre API $ID"
+echo "VPCLink: $VPC_LINK_ID"
+echo "NLB: $EKS_SERVICE_HOSTNAME"
+
+if [ "${EXISTS_DEPLOYMENT}"=="0" ];
+then
+    echo "Creando deployment sobre"
+    echo "INPUT_STAGE_NAME=$INPUT_STAGE_NAME"
+    echo "INPUT_AUTHORIZER_FUNCTION=$INPUT_AUTHORIZER_FUNCTION"
+    echo "INPUT_AUTHORIZER_ROLE_NAME=$INPUT_AUTHORIZER_ROLE_NAME"
+
 #    aws apigateway create-deployment \
 #        --rest-api-id $ID \
 #        --stage-name $INPUT_STAGE_NAME \
 #        --variables "url=$EKS_SERVICE_HOSTNAME,vpcLinkId=$VPC_LINK_ID,cpat_authorizer=$INPUT_AUTHORIZER_FUNCTION,cpat_authorizer_role=$INPUT_AUTHORIZER_ROLE_NAME" 
-#else
-#    echo "Actualizando"
+else
+    echo "Actualizando"
 #    $DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id 3hn50aahtd | jq -r '.items[0] |  .id')
 #    aws apigateway update-deployment \
 #        --rest-api-id $ID \
