@@ -15,7 +15,7 @@ PROJECT=$INPUT_PROJECT
 echo "Revisando load balancer asociado al servicio $SERVICE_NAME"
 NLB_LIST=$(aws elbv2 describe-load-balancers | jq -r ' [  .LoadBalancers[] | select( .Type=="network" ) | { arn: .LoadBalancerArn, hostname: .DNSName } ] ')
 
-EKS_SERVICE_HOSTNAME=$(/kubectl get services -l cpat.service=$SERVICE_NAME -n cpat -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
+EKS_SERVICE_HOSTNAME=$(/kubectl get services -l cpat.service=$SERVICE_NAME -n $PROJECT -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
 
 echo "Buscando NLB: $EKS_SERVICE_HOSTNAME"
 
@@ -25,7 +25,7 @@ then
     echo "Revisar que la etiqueta (label) 'cpat.service' tenga el nombre del servicio $EKS_SERVICE_HOSTNAME"
     exit 1
 fi
-#Al menos un NLB debe salir desde acá, si no lo hay, se supone que no se ha levantado
+# Al menos un NLB debe salir desde acá, si no lo hay, se supone que no se ha levantado
 ARN=$(echo $NLB_LIST | jq --arg h $EKS_SERVICE_HOSTNAME -r '.[] | select( .hostname == $h ) | .arn' )
 
 if [ -z "$ARN" ];
@@ -34,7 +34,7 @@ then
     exit 1
 fi
 
-#Listar los links que estan desplegados
+# Listar los links que estan desplegados
 VPC_LINK_ID=$(aws apigateway get-vpc-links | jq -r --arg t $ARN ' .items[] | select( .targetArns[] == $t ) | .id ')
 echo "Resultado de la busqueda: $VPC_LINK_ID"
 echo "Verificar si existe VPC Link"
@@ -65,17 +65,15 @@ else
     echo "VPCLink ID: $VPC_LINK_ID"
 fi
 
-#Actualizando API
+# Actualizando API
 API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME-api"
 API_NAME="$SERVICE_NAME"
-API_NAME=cpat-dev-usuarios-api
 
-#Check si existe api gateway
+# Check si existe API gateway
 API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')
 echo "API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')"
 
 ID=$(echo "$API_DATA" | jq -r '.id')
-echo "ID=\$(echo \"$API_DATA\" | jq -r '.id')=$ID"
 
 if [ -z ${ID} ];
 then
@@ -112,7 +110,6 @@ echo "Actualizando API $ID"
 aws apigateway put-rest-api --rest-api-id $ID \
         --body file://./swager_body.b64 
 
-
 EXISTS_DEPLOYMENT=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items | length ')
 
 echo "Deployment sobre API $ID"
@@ -126,15 +123,14 @@ then
     echo "INPUT_AUTHORIZER_FUNCTION=$INPUT_AUTHORIZER_FUNCTION"
     echo "INPUT_AUTHORIZER_ROLE_NAME=$INPUT_AUTHORIZER_ROLE_NAME"
 
-#    aws apigateway create-deployment \
-#        --rest-api-id $ID \
-#        --stage-name $INPUT_STAGE_NAME \
-#        --variables "url=$EKS_SERVICE_HOSTNAME,vpcLinkId=$VPC_LINK_ID,cpat_authorizer=$INPUT_AUTHORIZER_FUNCTION,cpat_authorizer_role=$INPUT_AUTHORIZER_ROLE_NAME" 
+    aws apigateway create-deployment \
+        --rest-api-id $ID \
+        --stage-name $INPUT_STAGE_NAME \
+        --variables "url=$EKS_SERVICE_HOSTNAME,vpcLinkId=$VPC_LINK_ID,cpat_authorizer=$INPUT_AUTHORIZER_FUNCTION,cpat_authorizer_role=$INPUT_AUTHORIZER_ROLE_NAME" 
 else
     echo "Actualizando"
-#    $DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id 3hn50aahtd | jq -r '.items[0] |  .id')
-#    aws apigateway update-deployment \
-#        --rest-api-id $ID \
-#        --deployment-id $DEPLOYMENT_ID
+    $DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items[0] |  .id')
+    aws apigateway update-deployment \
+        --rest-api-id $ID \
+        --deployment-id $DEPLOYMENT_ID
 fi
-
