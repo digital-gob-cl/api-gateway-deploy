@@ -21,7 +21,7 @@ echo "Buscando NLB: $EKS_SERVICE_HOSTNAME"
 
 if [ -z "$EKS_SERVICE_HOSTNAME" ];
 then
-    echo "No se ha encotrado el servicio etiquetado como $EKS_SERVICE_HOSTNAME"
+    echo "No se ha encontrado el servicio etiquetado como $EKS_SERVICE_HOSTNAME"
     echo "Revisar que la etiqueta (label) 'cpat.service' tenga el nombre del servicio $EKS_SERVICE_HOSTNAME"
     exit 1
 fi
@@ -72,8 +72,10 @@ API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME"
 
 #Check si existe api gateway 
 API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')
+echo "API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')"
 
 ID=$(echo "$API_DATA" | jq -r '.id')
+echo "ID=\$(echo \"$API_DATA\" | jq -r '.id')=$ID"
 
 #if [ -z ${ID} ];
 #then
