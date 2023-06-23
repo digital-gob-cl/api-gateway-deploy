@@ -42,17 +42,11 @@ echo "Verificar si existe VPC Link"
 if [ -z "$VPC_LINK_ID" ];
 then
     echo "No existe el VPC Link, procediendo a crearlo"
-#   echo "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link"
-    echo "$SERVICE_NAME-link"
-
-#   VPC_LINK_RES=$(aws apigateway create-vpc-link \
-#       --name "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link" \
-#       --description "Link para API servicio $SERVICE_NAME en ambiente $ENVIRONMENT" \
-#       --target-arns "$ARN" \
-#       --tags "Environment=$ENVIRONMENT,Project=$PROJECT,Purpose=API")
+    echo "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link"
+#   echo "$SERVICE_NAME-link"
 
     VPC_LINK_RES=$(aws apigateway create-vpc-link \
-        --name "$SERVICE_NAME-link" \
+        --name "$PROJECT-$SERVICE_NAME-$ENVIRONMENT-link" \
         --description "Link para API servicio $SERVICE_NAME en ambiente $ENVIRONMENT" \
         --target-arns "$ARN" \
         --tags "Environment=$ENVIRONMENT,Project=$PROJECT,Purpose=API")
@@ -67,7 +61,6 @@ fi
 
 # Actualizando API
 API_NAME="$PROJECT-$ENVIRONMENT-$SERVICE_NAME-api"
-API_NAME="$SERVICE_NAME"
 
 # Check si existe API gateway
 API_DATA=$(aws apigateway get-rest-apis | jq -r --arg n $API_NAME ' .items[] | select( .name == $n)')
@@ -102,7 +95,7 @@ then
     base64 ./swagger_temp.yaml > ./swager_body.b64
 else
     base64 -i ./swagger_temp.yaml -o ./swager_body.b64
-fi 
+fi
 
 echo "Actualizando API $ID"
 
