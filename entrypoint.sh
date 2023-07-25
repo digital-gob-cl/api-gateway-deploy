@@ -83,6 +83,8 @@ fi
 #Reemplazo de valores para lambda authorizer
 cp ./$INPUT_SWAGGER_PATH ./swagger_temp.yaml
 
+sed -i 's/API_NAME/'$API_NAME'/g' ./swagger_temp.yaml
+
 sed -i 's/ACCOUNT_ID/'$ACCOUNT_ID'/g'  ./swagger_temp.yaml
 
 sed -i 's/REGION/'$AWS_DEFAULT_REGION'/g'  ./swagger_temp.yaml
@@ -105,8 +107,11 @@ aws apigateway put-rest-api --rest-api-id $ID \
 EXISTS_DEPLOYMENT=$(aws apigateway get-deployments --rest-api-id $ID | jq -r '.items | length ')
 
 echo "Deployment sobre API $ID"
-echo "VPCLink: $VPC_LINK_ID"
+echo "VPC Link: $VPC_LINK_ID"
 echo "NLB: $EKS_SERVICE_HOSTNAME"
+echo "AUTH_FUNC:  $INPUT_AUTHORIZER_FUNCTION"
+echo "AUTH_ROL: $INPUT_AUTHORIZER_ROLE_NAME"
+
 
 if [ "${EXISTS_DEPLOYMENT}"=="0" ];
 then
