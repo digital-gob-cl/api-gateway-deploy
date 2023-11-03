@@ -53,6 +53,16 @@ inputs:
     description: Secret access key
     required: false
 
+  cors_domain:
+    description: CORS Domain allowed
+    required: false
+    default: "*"
+    
+  namespace:
+    description: Namespace objetivo
+    required: false
+    default: "cpat"
+
 
   
 

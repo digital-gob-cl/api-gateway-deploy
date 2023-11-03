@@ -15,7 +15,7 @@ PROJECT=$INPUT_PROJECT
 echo "Revisando load balancer asociado al servicio $SERVICE_NAME"
 NLB_LIST=$(aws elbv2 describe-load-balancers | jq -r ' [  .LoadBalancers[] | select( .Type=="network" ) | { arn: .LoadBalancerArn, hostname: .DNSName } ] ')
 
-EKS_SERVICE_HOSTNAME=$(/kubectl get services -l cpat.service=$SERVICE_NAME -n $PROJECT -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
+EKS_SERVICE_HOSTNAME=$(/kubectl get services -l cpat.service=$SERVICE_NAME -n $INPUT_NAMESPACE -o json | jq -r ' .items[].status.loadBalancer.ingress[].hostname')
 
 echo "Buscando NLB: $EKS_SERVICE_HOSTNAME"
 
@@ -89,7 +89,10 @@ sed -i 's/ACCOUNT_ID/'$ACCOUNT_ID'/g'  ./swagger_temp.yaml
 
 sed -i 's/REGION/'$AWS_DEFAULT_REGION'/g'  ./swagger_temp.yaml
 
-#cat  ./swagger_temp.yaml
+# Reemplazo de variable CORS DOMAIN
+sed -i 's/CORS_DOMAIN/'$INPUT_CORS_DOMAIN'/g' ./swagger_temp.yaml
+
+cat  ./swagger_temp.yaml
 
 if [[ "$OSTYPE" == "linux-gnu"* ]];
 then
